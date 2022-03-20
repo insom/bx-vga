@@ -5,22 +5,14 @@ module top (
     output USBPU, // USB pull-up resistor
     output PIN_13,
     output PIN_14,
-    output PIN_15,
+    output PIN_16, // HS
+    output PIN_17, // VS
+    output PIN_20, // Green
 );
-    // drive USB pull-up resistor to '0' to disable USB
     assign USBPU = 0;
-
-    ////////
-    // make a simple blink circuit
-    ////////
-
-    // keep track of time and location in blink_pattern
     reg [25:0] blink_counter;
-
-    // pattern that will be flashed over the LED over time
     wire [31:0] blink_pattern = 32'b101010001110111011100010101;
 
-    // increment the blink_counter every clock
     always @(posedge CLK) begin
         blink_counter <= blink_counter + 1;
     end
@@ -29,18 +21,39 @@ module top (
     assign LED = blink_pattern[blink_counter[25:21]];
     assign PIN_14 = blink_counter[3];
 
-pll foo(
-	.clock_in(CLK),
-	.clock_out(PIN_15), 
-	.locked(PIN_13)
-	);
-endmodule
+    reg mhz25;
 
-/*
-top (
-    CLK,
-    LED,
-    USBPU,
-    PIN_14
-);
-*/
+    pll foo(
+        .clock_in(CLK),
+        .clock_out(mhz25), 
+        .locked(PIN_13)
+        );
+
+    reg [9:0] x;
+    reg [9:0] y;
+    reg valid;
+
+    // Thanks Ken Sheriff for these three :-)
+    assign PIN_16 = x < (640 + 16) || x >= (640 + 16 + 96);
+    assign PIN_17 = y < (480 + 10) || y >= (480 + 10 + 2);
+    assign valid = (x < 640) && (y < 480);
+
+    always @(posedge mhz25) begin
+      if (x < 799) begin
+        x <= x + 1;
+      end else begin
+        x <= 0;
+        if (y <= 525) begin
+          y <= y + 1;
+        end else begin
+          y <= 0;
+        end
+      end
+      // Let's do checkerboards to it
+      if (x[4] == 0 ) begin
+          PIN_20 <= y[4];
+      end else begin
+          PIN_20 <= ~y[4];
+      end
+    end
+endmodule
