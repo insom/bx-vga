@@ -1,34 +1,35 @@
-// look in pins.pcf for all the pin names on the TinyFPGA BX board
 module top (
     input CLK,    // 16MHz clock
     output LED,   // User/boot LED next to power LED
     output USBPU, // USB pull-up resistor
-    output PIN_13,
-    output PIN_14,
+    output PIN_13, // "Locked" signal from the PLL
+    output PIN_14, // 1MHz (crudely subdivided)
     output PIN_16, // HS
     output PIN_17, // VS
     output PIN_20, // Green
 );
+    /* Start: Example code from TinyFPGA */
     assign USBPU = 0;
     reg [25:0] blink_counter;
     wire [31:0] blink_pattern = 32'b101010001110111011100010101;
-
     always @(posedge CLK) begin
         blink_counter <= blink_counter + 1;
     end
-    
     // light up the LED according to the pattern
     assign LED = blink_pattern[blink_counter[25:21]];
+    /* End: Example code from TinyFPGA */
+
+    /* Start: Figuring out how to derive 1MHz and 25MHz clocks */
     assign PIN_14 = blink_counter[3];
-
     reg mhz25;
-
     pll foo(
         .clock_in(CLK),
         .clock_out(mhz25), 
         .locked(PIN_13)
-        );
+    );
+    /* End: Figuring out how to derive 1MHz and 25MHz clocks */
 
+    /* Start: Generate VGA sync pulses and pixel data */
     reg [9:0] x;
     reg [9:0] y;
     reg valid;
@@ -56,4 +57,5 @@ module top (
           PIN_20 <= ~y[4];
       end
     end
+    /* End: Generate VGA sync pulses and pixel data */
 endmodule
