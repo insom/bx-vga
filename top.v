@@ -34,7 +34,7 @@ module top (
     reg [9:0] y;
     reg valid;
 
-    // Thanks Ken Sheriff for these three :-)
+    // Thanks Ken Shirriff for these three :-)
     assign PIN_16 = x < (640 + 16) || x >= (640 + 16 + 96);
     assign PIN_17 = y < (480 + 10) || y >= (480 + 10 + 2);
     assign valid = (x < 640) && (y < 480);
